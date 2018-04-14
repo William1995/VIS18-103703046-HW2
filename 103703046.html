@@ -1,0 +1,323 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>[VIS18]HW2_103703046_張維庭</title>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <script src="http://d3js.org/d3.v3.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+        <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+    </head>
+    <style>
+        body{
+            width:2000px;
+            margin:100px auto;
+        }
+        path {  stroke: #fff; }
+        path:hover {  opacity:0.9; }
+        rect:hover {  fill:blue; }
+        .axis {  font: 15px sans-serif; }
+        .legend tr{    border-bottom:1px solid grey; }
+        .legend tr:first-child{    border-top:1px solid grey; }
+
+        .axis path,
+        .axis line {
+          fill: none;
+          stroke: #000;
+          shape-rendering: crispEdges;
+        }
+
+        .x.axis path {  display: none; }
+        .legend{
+            margin-bottom:100px;
+            margin-left:20px;
+            display:inline-block;
+            border-collapse: collapse;
+            border-spacing: 0px;
+            font-size: 10px;
+        }
+        .legend td{
+            padding:4px 5px;
+            vertical-align:bottom;
+        }
+        .legendFreq, .legendPerc{
+            align:right;
+            width:10px;
+        }
+        </style>
+    
+    <body>
+        <div id='dashboard'></div>
+        
+        <script>
+            function dashboard(id, tData){
+                var barColor = 'steelblue';
+                function segColor(c){
+                    return {Asia:"#FFD700",America:"#DC143C",Europe:"#87CEFA",Oceania:"#3CB371",Africa:"#000000",Unstated:"#A9A9A9"}[c];
+                }
+                
+                // 計算總人數.
+                tData.forEach(function(d){d.total=d.amount.Asia+d.amount.America+d.amount.Europe+d.amount.Oceania+d.amount.Africa+d.amount.Unstated;});
+                
+                //計算各洲總人數
+                var totalbycontiment = ['Asia','America','Europe','Oceania','Africa','Unstated'].map(function(d){ 
+                    return {type:d, amount: d3.sum(tData.map(function(t){ return t.amount[d];}))}; 
+                });    
+
+                //各年總人數
+                var totlabyyear = tData.map(function(d){return [d.Year,d.total];});
+                
+                // function to handle histogram.
+                function histoGram(hD){
+                    var hG={},    
+                    hGDim = {t: 60, r: 0, b: 80, l: 90};
+                    hGDim.w = 700 - hGDim.l - hGDim.r, 
+                    hGDim.h = 400 - hGDim.t - hGDim.b;
+                    
+                    //create svg for histogram
+                    var hGsvg = d3.select(id).append("svg")
+                    .attr("width", hGDim.w + hGDim.l + hGDim.r)
+                    .attr("height", hGDim.h + hGDim.t + hGDim.b)
+                    .append("g")
+                    .attr("transform", "translate(" + hGDim.l + "," + hGDim.t + ")");
+
+                    // Ｘ軸範圍
+                    var x = d3.scale.ordinal().rangeRoundBands([0, hGDim.w], 0.1)
+                    .domain(hD.map(function(d) { return d[0]; }));
+
+                    //X軸
+                    hGsvg.append("g").attr("class", "x axis")
+                    .attr("transform", "translate(0," + hGDim.h + ")")
+                    .call(d3.svg.axis().scale(x).orient("bottom"));
+
+                    //Y軸範圍
+                    var y = d3.scale.linear().range([hGDim.h, 0])
+                    .domain([0, d3.max(hD, function(d) { return d[1]; })]);
+                    
+                    //x軸名
+                     hGsvg.append("text")
+                        .text("年份")
+                        .attr("x", hGDim.w/2)
+                        .attr("y", hGDim.h+20)
+                        .attr("dy", "1.71em")
+                        .style("text-anchor", "end")
+                        .attr("fill", "black")
+                        .style("font-weight", "bold");
+                    
+                    //y軸名
+                    hGsvg.append("text")
+                        .attr("x", 60)
+                        .attr("y", -40)
+                        .attr("dy", "1.71em")
+                        .style("text-anchor", "end")
+                        .attr("fill", "black")
+                        .style("font-weight", "bold")
+                        .text("旅遊人數(單位：萬)");
+
+                    //Bar
+                    var bars = hGsvg.selectAll(".bar").data(hD).enter()
+                    .append("g").attr("class", "bar");
+
+                    bars.append("rect")
+                    .attr("x", function(d) { return x(d[0]); })
+                    .attr("y", function(d) { return y(d[1]); })
+                    .attr("width", x.rangeBand())
+                    .attr("height", function(d) { return hGDim.h - y(d[1]); })
+                    .attr('fill',barColor)
+                    .on("mouseover",mouseover)
+                    .on("mouseout",mouseout);
+                    
+                    //label on bars
+                    bars.append("text").text(function(d){ return d3.format(",")(d[1])})
+                    .attr("x", function(d) { return x(d[0])+x.rangeBand()/2; })
+                    .attr("y", function(d) { return y(d[1])-5; })
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "11px")
+                    .style("font-weight","bold");
+                    
+                    //Y軸
+                    bars.append("g").attr("class", "axis")
+                        .attr("transform", "translate(0,0)")
+                        .call(d3.svg.axis().scale(y).orient("left"));
+                    
+                    //on bar
+                    function mouseover(d){ 
+                    // filter for selected state.
+                    var temp = tData.filter(function(s){ return s.Year == d[0];})[0],
+                    result = d3.keys(temp.amount).map(function(s){ return {type:s, amount:temp.amount[s]};});
+                    
+                    //更新圓餅及legend   
+                    pC.update(result);
+                    leg.update(result);    
+                    }
+                    
+                    //off bar
+                    function mouseout(d){      
+                        pC.update(totalbycontiment);
+                        leg.update(totalbycontiment);
+                    }
+                    
+                    // create function to update the bars
+                    hG.update = function(changedata, color){
+                        //update the domain of the y-axis map to reflect change in amoumt.
+                        y.domain([0, d3.max(changedata, function(d) { return d[1]; })]);
+
+                        //Attach the new data to the bars
+                        var bars = hGsvg.selectAll(".bar").data(changedata);
+
+                        //transition the height and color of rectangles
+                        bars.select("rect").transition().duration(500)
+                            .attr("y", function(d) {return y(d[1]); })
+                            .attr("height", function(d) { return hGDim.h - y(d[1]); })
+                            .attr("fill", color);
+
+                        //transition the amount labels location and change value
+                        bars.select("text").transition().duration(500)
+                            .text(function(d){ return d3.format(",")(d[1])})
+                            .attr("y", function(d) {return y(d[1])-5; });
+                        
+                         //Y軸
+                        bars.select("g").attr("class", "axis")
+                        .attr("transform", "translate(0,0)")
+                        .call(d3.svg.axis().scale(y).orient("left"));
+                        
+                    }        
+                    return hG;    
+                }//histo
+                
+                //Pie char
+                function pieChart(pD){
+                    var pC ={},    
+                    pieDim ={w:300, h: 400};
+                    pieDim.r = Math.min(pieDim.w, pieDim.h) / 2;
+
+                    //create svg for pie chart
+                    var piesvg = d3.select(id).append("svg")
+                        .attr("width", pieDim.w).attr("height", pieDim.h).append("g")
+                        .attr("transform", "translate("+pieDim.w/2+","+pieDim.h/2+")");
+
+                    //create function to draw the arcs of the pie slices
+                    var arc = d3.svg.arc().outerRadius(pieDim.r - 10).innerRadius(0);
+
+                    //create a function to compute the pie slice angles
+                    var pie = d3.layout.pie().sort(null).value(function(d) { return d.amount; });
+
+                    //Draw the pie slices.
+                    piesvg.selectAll("path").data(pie(pD))
+                          .enter()
+                          .append("path")
+                          .attr("d", arc)
+                          .each(function(d) { this._current = d; })
+                          .style("fill", function(d) { return segColor(d.data.type); })
+                          .on("mouseover",mouseover)
+                          .on("mouseout",mouseout);
+
+                    //create function to update pie-chart
+                    pC.update = function(changedata){
+                        piesvg.selectAll("path").data(pie(changedata)).transition().duration(500)
+                            .attrTween("d", arcTween);
+                    } 
+                    
+                    //on pie
+                    function mouseover(d){
+                        hG.update(tData.map(function(v){ 
+                            return [v.Year,v.amount[d.data.type]];}),segColor(d.data.type));
+                    }
+                    
+                    //off pie
+                    function mouseout(d){
+                        hG.update(tData.map(function(v){
+                            return [v.Year,v.total];}), barColor);
+                    }
+
+                    function arcTween(a) {
+                        var i = d3.interpolate(this._current, a);
+                        this._current = i(0);
+                        return function(t) { return arc(i(t));};
+                    }    
+                    return pC;
+                }
+                
+                //Lengend
+                function legend(lD){
+                    var leg = {};
+
+                    //create table for legend.
+                    var legend = d3.select(id).append("table").attr('class','legend');
+
+                    // create one row per segment.
+                    var tr = legend.append("tbody").selectAll("tr").data(lD).enter().append("tr");
+
+                    //create the first column for each segment.
+                    tr.append("td").append("svg").attr("width", '16').attr("height", '16')
+                        .append("rect")
+                        .attr("width", '16').attr("height", '16')
+                        .attr("fill",function(d){ return segColor(d.type); })
+                        .on("mouseover",mouseover)
+                        .on("mouseout",mouseout);
+
+                    //create the second column for each segment.
+                    tr.append("td").text(function(d){ return d.type;});
+
+                    // create the third column for each segment.
+                    tr.append("td").attr("class",'legendFreq')
+                        .text(function(d){ return d3.format(",")(d.amount);});
+
+                    // create the fourth column for each segment.
+                    tr.append("td").attr("class",'legendPerc')
+                        .text(function(d){ return getLegend(d,lD);});
+                    
+                    //on leg
+                    function mouseover(d){
+                        hG.update(tData.map(function(v){ 
+                            return [v.Year,v.amount[d.type]];}),segColor(d.type));
+                    }
+                    
+                    //off leg
+                    function mouseout(d){
+                        hG.update(tData.map(function(v){
+                            return [v.Year,v.total];}), barColor);
+                    }
+                    
+                    //function to update the legend
+                    leg.update = function(changedata){
+                        var l = legend.select("tbody").selectAll("tr").data(changedata);
+
+                        l.select(".legendFreq").text(function(d){ return d3.format(",")(d.amount);});
+
+                        // update the percentage column.
+                        l.select(".legendPerc").text(function(d){ return getLegend(d,changedata);});        
+                    }
+
+                    function getLegend(d,x){
+                        return d3.format(".4%")(d.amount/d3.sum(x.map(function(v){ return v.amount; })));
+                    }
+                    return leg;
+                }
+                
+                //創建初始狀態
+                var hG = histoGram(totlabyyear), // create the histogram.
+                    pC = pieChart(totalbycontiment), // create the pie-chart.
+                    leg= legend(totalbycontiment);  // create the legend.
+                
+            }//dashboard
+        </script>>    
+        
+        <script>
+            var travelData=[
+            {Year:'2008',amount:{Asia:3085783, America:461269, Europe:200914, Oceania:68555, Africa:8499, Unstated:20167}},
+            {Year:'2009',amount:{Asia:3655084, America:442036, Europe:197070, Oceania:66173, Africa:7735, Unstated:26906}},
+            {Year:'2010',amount:{Asia:4783060, America:474709, Europe:203301, Oceania:71953, Africa:8254, Unstated:26000}},
+            {Year:'2011',amount:{Asia:5264210, America:495136, Europe:212148, Oceania:70540, Africa:8938, Unstated:36512}},
+            {Year:'2012',amount:{Asia:6473684, America:497597, Europe:218045, Oceania:75414, Africa:8865, Unstated:37865}},
+            {Year:'2013',amount:{Asia:7138786, America:502446, Europe:223062, Oceania:77722, Africa:8795, Unstated:65469}},
+            {Year:'2014',amount:{Asia:8970186, America:565375, Europe:264880, Oceania:93119, Africa:9960, Unstated:6684}},
+            {Year:'2015',amount:{Asia:9469559, America:588192, Europe:274035, Oceania:90813, Africa:10160, Unstated:7026}},
+            {Year:'2016',amount:{Asia:9624793, America:649337, Europe:299756, Oceania:98226, Africa:10668, Unstated:7499}},
+            {Year:'2017',amount:{Asia:9585635, America:702049, Europe:330090, Oceania:108344, Africa:11682, Unstated:1801}}
+            ];
+            dashboard('#dashboard',travelData);
+        </script>
+    </body>
+    
+</html>
