@@ -11,7 +11,7 @@
     <style>
         body{
             width:2000px;
-            margin:100px auto;
+            margin:70px auto;
         }
         path {  stroke: #fff; }
         path:hover {  opacity:0.9; }
@@ -47,8 +47,44 @@
         </style>
     
     <body>
-        <div id='dashboard'></div>
+        <h1 class="title" >
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        近十年來台旅客人數趨勢及組成資料互動圖表
+        </h1>
+        <h3>&nbsp;&nbsp;&nbsp;&nbsp;動機：</h3>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;
+           近期有許多關於台灣觀光產業的負面消息，根據許多報章媒體的報導，
+           台灣觀光業面臨寒冬非常不景氣，而大部分的業者將原因歸咎於觀光人數的不足，<br>
+           &nbsp;&nbsp;&nbsp;&nbsp;
+           特別是在外國觀光人數的方面。
+           因此，希望透過視覺化的方式來呈現台灣外國觀光人口總數近年來的趨勢，
+           並能同時能了解觀光人口的組成及各自之趨勢。</p>
+        <br>
         
+        <h3>&nbsp;&nbsp;&nbsp;&nbsp;說明：</h3>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;
+           此次互動圖表使用的資料是來自於觀光局的統計數據，針對近十年的來台旅遊總人數及組成進行視覺化分析，呈現方式是以儀表板的模式設計：<br><br>
+           &nbsp;&nbsp;&nbsp;&nbsp; 
+           1.&nbsp;當圖表呈現靜態時，長條圖呈現的是歷年觀光總人口，圓餅圖則是十年來總計各大州觀光人口所佔比率。<br><br>
+           &nbsp;&nbsp;&nbsp;&nbsp;
+           2.&nbsp;當把滑鼠移至長條圖的任一bar上時，右邊圓餅圖及圖標會動態改變顯示當年觀光人口組成。<br><br>
+           &nbsp;&nbsp;&nbsp;&nbsp;
+           3.&nbsp;當把滑鼠移至圓餅圖的任一區塊上時，左邊長條圖會動態改變顯示當州觀光人口歷年的變化趨勢。<br><br>
+           &nbsp;&nbsp;&nbsp;&nbsp;
+           4.&nbsp;當把滑鼠移至圖標的顏色區塊上時，左邊長條圖會動態改變顯示當州觀光人口歷年的變化趨勢。<br><br>
+        </p>
+        <br>
+        <div id='dashboard'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+        
+        <h3>&nbsp;&nbsp;&nbsp;&nbsp;結果：</h3>
+        <p>&nbsp;&nbsp;&nbsp;&nbsp;
+           可以看到來台旅客人數是有遞增的趨勢，只是近年來有趨緩的現象。<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            此外可以發現美洲、歐洲及亞洲來台旅遊人數都有增長趨勢，
+            同時亞洲觀光人口又佔最大觀光人數組成近90%。
+        </p>
+        <br><br>
         <script>
             function dashboard(id, tData){
                 var barColor = 'steelblue';
@@ -106,13 +142,13 @@
                     
                     //y軸名
                     hGsvg.append("text")
-                        .attr("x", 60)
+                        .attr("x", 30)
                         .attr("y", -40)
                         .attr("dy", "1.71em")
                         .style("text-anchor", "end")
                         .attr("fill", "black")
                         .style("font-weight", "bold")
-                        .text("旅遊人數(單位：萬)");
+                        .text("旅遊人數");
 
                     //Bar
                     var bars = hGsvg.selectAll(".bar").data(hD).enter()
